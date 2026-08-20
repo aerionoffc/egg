@@ -1,0 +1,153 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-08-02T10:48:21+07:00",
+    "name": "Node.js V2 (Auto)",
+    "author": "bangsano135@gmail.com",
+    "description": "Environment Node.js cerdas dengan deteksi otomatis. Server akan mengunduh module NPM secara otomatis dan mencari perintah 'npm start' dari package.json tanpa perlu konfigurasi manual dari klien.",
+    "features": null,
+    "docker_images": {
+        "Nodejs 20 (LTS - Direkomendasikan)": "ghcr.io\/ptero-eggs\/yolks:nodejs_20",
+        "Nodejs 25 (Eksperimental)": "ghcr.io\/ptero-eggs\/yolks:nodejs_25",
+        "Nodejs 24": "ghcr.io\/ptero-eggs\/yolks:nodejs_24",
+        "Nodejs 23": "ghcr.io\/ptero-eggs\/yolks:nodejs_23",
+        "Nodejs 22": "ghcr.io\/ptero-eggs\/yolks:nodejs_22",
+        "Nodejs 21": "ghcr.io\/ptero-eggs\/yolks:nodejs_21",
+        "Nodejs 19": "ghcr.io\/ptero-eggs\/yolks:nodejs_19",
+        "Nodejs 18": "ghcr.io\/ptero-eggs\/yolks:nodejs_18",
+        "Nodejs 17": "ghcr.io\/ptero-eggs\/yolks:nodejs_17",
+        "Nodejs 16": "ghcr.io\/ptero-eggs\/yolks:nodejs_16",
+        "Nodejs 14": "ghcr.io\/ptero-eggs\/yolks:nodejs_14",
+        "Nodejs 12": "ghcr.io\/ptero-eggs\/yolks:nodejs_12"
+    },
+    "file_denylist": [],
+    "startup": "if [[ -d .git ]] && [[ \"{{AUTO_UPDATE}}\" == \"1\" ]]; then git pull; fi; if [[ ! -z ${UNNODE_PACKAGES} ]]; then \/usr\/local\/bin\/npm uninstall ${UNNODE_PACKAGES}; fi; if [[ ! -z ${NODE_PACKAGES} ]]; then \/usr\/local\/bin\/npm install ${NODE_PACKAGES}; fi; if [ -f \/home\/container\/package.json ]; then \/usr\/local\/bin\/npm install; fi; if [[ \"{{USE_NPM_START}}\" == \"1\" ]] && [ -f \/home\/container\/package.json ] && \/usr\/local\/bin\/node -e \"const p=require('\/home\/container\/package.json'); process.exit((p.scripts && p.scripts.start) ? 0 : 1);\" 2>\/dev\/null; then \/usr\/local\/bin\/npm start; elif [[ \"${MAIN_FILE}\" == \"*.js\" ]]; then \/usr\/local\/bin\/node \"\/home\/container\/${MAIN_FILE}\" ${NODE_ARGS}; else \/usr\/local\/bin\/ts-node --esm \"\/home\/container\/${MAIN_FILE}\" ${NODE_ARGS}; fi",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": [\r\n        \"running\",\r\n        \"started\",\r\n        \"ready\",\r\n        \"listening\",\r\n        \"online\",\r\n        \"berhasil\",\r\n        \"sukses\",\r\n        \"success\",\r\n        \"siap\",\r\n        \"connected\"\r\n    ]\r\n}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\n# Script Instalasi App NodeJS\n# Server Files: \/mnt\/server\napt update\napt install -y git curl jq file unzip make gcc g++ python3 python3-dev python3-pip libtool\n\necho -e \"Memperbarui NPM ke versi terbaru. Mohon tunggu...\"\nnpm install npm@latest --location=global\n\nmkdir -p \/mnt\/server\ncd \/mnt\/server\n\nif [ \"${USER_UPLOAD}\" == \"true\" ] || [ \"${USER_UPLOAD}\" == \"1\" ]; then\n    echo -e \"\u2705 Mode Upload File Manual terdeteksi. Melewati proses sinkronisasi GitHub...\"\n    exit 0\nfi\n\nif [ -z \"${GIT_ADDRESS}\" ]; then\n    echo -e \"\\n\u274c ERROR FATAL: Anda memilih opsi Download dari GitHub (USER_UPLOAD = 0),\"\n    echo -e \"tetapi Link Repositori (GIT_ADDRESS) KOSONG!\"\n    echo -e \"Silakan isi Link GitHub di panel, atau ubah 'Gunakan File Upload Manual' menjadi 1.\\n\"\n    exit 1\nfi\n\nif [ ! -z \"${USERNAME}\" ] || [ ! -z \"${ACCESS_TOKEN}\" ]; then\n    if [ -z \"${USERNAME}\" ] || [ -z \"${ACCESS_TOKEN}\" ]; then\n        echo -e \"\\n\u274c ERROR FATAL: Kredensial Private Repo Tidak Lengkap!\"\n        echo -e \"Anda mengisi salah satu antara USERNAME atau ACCESS_TOKEN, tetapi mengosongkan yang lainnya.\"\n        echo -e \"Keduanya WAJIB diisi bersamaan jika repo berstatus Private, atau KOSONGKAN keduanya jika repo Public.\\n\"\n        exit 1\n    fi\nfi\n\nif [[ ${GIT_ADDRESS} != *.git ]]; then\n    GIT_ADDRESS=${GIT_ADDRESS}.git\nfi\n\nif [ -z \"${USERNAME}\" ] && [ -z \"${ACCESS_TOKEN}\" ]; then\n    echo -e \"Mencoba akses GitHub anonim (Tanpa Token)...\"\nelse\n    GIT_ADDRESS=\"https:\/\/${USERNAME}:${ACCESS_TOKEN}@$(echo -e ${GIT_ADDRESS} | cut -d\/ -f3-)\"\nfi\n\nif [ \"$(ls -A \/mnt\/server)\" ]; then\n    echo -e \"\u26a0\ufe0f Peringatan: Direktori \/mnt\/server tidak kosong.\"\n    if [ -d .git ]; then\n        echo -e \"Direktori .git ditemukan.\"\n        if [ -f .git\/config ]; then\n            echo -e \"Memuat informasi dari git config...\"\n            ORIGIN=$(git config --get remote.origin.url)\n        else\n            echo -e \"\u274c File ditemukan tetapi tidak ada git config.\"\n            echo -e \"Membatalkan proses instalasi agar tidak merusak file Anda yang sudah ada.\"\n            exit 10\n        fi\n    fi\n\n    if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\n        echo \"\ud83d\udd04 Menarik pembaruan (pull) terbaru dari GitHub...\"\n        git pull\n    fi\nelse\n    echo -e \"Direktori kosong.\\n\u2b07\ufe0f Memulai kloning file dari repositori...\"\n    if [ -z \"${BRANCH}\" ]; then\n        echo -e \"Mengkloning cabang utama (default branch)...\"\n        git clone ${GIT_ADDRESS} .\n    else\n        echo -e \"Mengkloning cabang spesifik: ${BRANCH}...\"\n        git clone --single-branch --branch ${BRANCH} ${GIT_ADDRESS} .\n    fi\nfi\n\necho \"\ud83d\udce6 Menginstal library \/ packages Node.js...\"\nif [[ ! -z \"${NODE_PACKAGES}\" ]]; then\n    \/usr\/local\/bin\/npm install ${NODE_PACKAGES}\nfi\n\nif [ -f \/mnt\/server\/package.json ]; then\n    \/usr\/local\/bin\/npm install --production\nfi\n\necho -e \"\u2705 Instalasi selesai dengan sukses!\"\nexit 0",
+            "container": "node:20-trixie-slim",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Gunakan File Upload Manual?",
+            "description": "Aktifkan saklar ini jika Anda mengupload file bot sendiri secara manual. Matikan saklar ini jika Anda ingin mendownload script otomatis dari GitHub. PENTING: Mode download dari GitHub HANYA akan terpicu jika Anda menekan tombol \"Reinstall Server\" di menu Settings (paling bawah).",
+            "env_variable": "USER_UPLOAD",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Gunakan NPM Start (Otomatis)?",
+            "description": "Aktifkan saklar ini agar server memprioritaskan eksekusi command start dari package.json (jika ada). Matikan saklar ini untuk memaksa server mengabaikan package.json dan murni menjalankan [File Utama] beserta [Argumen Node] yang Anda tentukan di bawah.",
+            "env_variable": "USE_NPM_START",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "File Utama Script (Entry File)",
+            "description": "Nama file eksekutor Anda (mendukung ekstensi .js dan .ts, contoh: index.js atau app.ts). Jika saklar Gunakan NPM Start sedang aktif dan package.json valid, input pada kolom ini akan diabaikan.",
+            "env_variable": "MAIN_FILE",
+            "default_value": "index.js",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:16",
+            "field_type": "text"
+        },
+        {
+            "name": "Argumen Node Tambahan (Opsional)",
+            "description": "Argumen ekstra. Logika di sistem: \"node [File_Utama] ...[Argumen_Tambahan]\". Contoh pengisian: \"--max-old-space-size=1024\" (mengatur batas RAM), \"<url> <time> <rate> <threads>\" (Eksekusi DD*S), atau lainnya (tanpa tanda kutip ya). Nanti hasilnya menjadi seperti ini, contoh: \"node index.js --max-old-space-size=1024\". Biarkan KOSONG jika Anda tidak paham atau tidak diperlukan.",
+            "env_variable": "NODE_ARGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64",
+            "field_type": "text"
+        },
+        {
+            "name": "Link Repositori Git (Opsional)",
+            "description": "Alamat link Repository GitHub (contoh: https:\/\/github.com\/username\/nama_repo). PENTING: Agar aksi Anda dalam mengisi\/mengubah link Repository Github di kolom ini dapat terpicu, Anda WAJIB menekan tombol \"Reinstall Server\" di menu Settings (paling bawah) agar sistem mengunduhnya. Jika Anda tidak melakukannya, tidak akan ada yang terjadi, sistem tidak akan mengunduh file apapun dari repository github yang Anda tetapkan. Dan jika saklar File Upload Manual sedang aktif, input pada kolom ini akan diabaikan.",
+            "env_variable": "GIT_ADDRESS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Update Otomatis dari GitHub?",
+            "description": "Aktifkan saklar ini agar bot otomatis menarik pembaruan (git pull) dari GitHub setiap kali server dinyalakan.",
+            "env_variable": "AUTO_UPDATE",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Cabang Git \/ Branch (Opsional)",
+            "description": "Spesifik branch GitHub yang ingin diinstal. Kosongkan untuk menggunakan branch utama (main\/master). PENTING: Perubahan di sini butuh klik \"Reinstall Server\" di menu Settings (paling bawah) agar berlaku.",
+            "env_variable": "BRANCH",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Username GitHub (Private Repo)",
+            "description": "Isi username GitHub Anda HANYA jika script yang didownload bersifat Repository Private. PENTING: Perubahan di sini butuh klik \"Reinstall Server\" di menu Settings (paling bawah) agar berlaku.",
+            "env_variable": "USERNAME",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Token Akses GitHub (Private Repo)",
+            "description": "Isi dengan Personal Access Token (PAT) HANYA jika repository Anda Private. PENTING: Perubahan di sini butuh klik \"Reinstall Server\" di menu Settings (paling bawah) agar berlaku.",
+            "env_variable": "ACCESS_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Tambahan Package NPM (Opsional)",
+            "description": "Install paksa (npm install) modul tambahan yang tidak ada di file package.json bawaan Anda. Pisahkan dengan spasi jika banyak (contoh: axios moment ssh).",
+            "env_variable": "NODE_PACKAGES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Hapus Package NPM (Opsional)",
+            "description": "Hapus paksa modul tertentu. Pisahkan dengan spasi jika banyak.",
+            "env_variable": "UNNODE_PACKAGES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        }
+    ]
+}
